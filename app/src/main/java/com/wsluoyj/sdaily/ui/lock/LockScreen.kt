@@ -4,6 +4,7 @@ import android.app.Activity
 import android.hardware.biometrics.BiometricManager
 import android.hardware.biometrics.BiometricPrompt
 import android.os.CancellationSignal
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -19,7 +20,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,21 +27,26 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 
 private val AUTHENTICATORS =
     BiometricManager.Authenticators.BIOMETRIC_WEAK or BiometricManager.Authenticators.DEVICE_CREDENTIAL
 
-/** 应用锁解锁页：进入时自动拉起系统指纹验证（Android 11+ 平台 API，任意 Activity 可用） */
+/** 应用锁解锁页：回到前台（ON_RESUME）时自动拉起系统指纹验证，避免在后台/桌面弹框 */
 @Composable
 fun LockScreen(onUnlocked: () -> Unit) {
     val context = LocalContext.current
     var hint by remember { mutableStateOf("验证指纹或屏幕锁以进入") }
-    var autoTried by remember { mutableStateOf(false) }
+    // 验证会话守卫：同一时间只允许一次 authenticate，防止重复弹框
+    var authActive by remember { mutableStateOf(false) }
 
     fun authenticate() {
+        if (authActive) return
         val activity = context as? Activity
         if (activity == null) {
             hint = "无法启动验证，请重进应用"
@@ -54,6 +59,7 @@ fun LockScreen(onUnlocked: () -> Unit) {
             hint = "本机未录入指纹或未设置屏幕锁，请先到系统设置完成后再试"
             return
         }
+        authActive = true
         val prompt = BiometricPrompt.Builder(context)
             .setTitle("解锁 私迹")
             .setSubtitle("验证通过后才能查看记录")
@@ -64,10 +70,12 @@ fun LockScreen(onUnlocked: () -> Unit) {
             ContextCompat.getMainExecutor(context),
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult?) {
+                    authActive = false
                     onUnlocked()
                 }
 
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence?) {
+                    authActive = false
                     hint = if (errorCode == BiometricPrompt.BIOMETRIC_ERROR_USER_CANCELED ||
                         errorCode == BiometricPrompt.BIOMETRIC_ERROR_CANCELED
                     ) {
@@ -80,10 +88,18 @@ fun LockScreen(onUnlocked: () -> Unit) {
         )
     }
 
-    LaunchedEffect(Unit) {
-        if (!autoTried) {
-            autoTried = true
-            authenticate()
+    // 只在前台恢复时发起验证：后台重组不会触发，退到桌面不会再弹验证框
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                authenticate()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            authActive = false
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
 
