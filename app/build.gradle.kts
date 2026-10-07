@@ -1,7 +1,15 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.devtools.ksp")
+}
+
+// 签名信息从 local.properties 读取（不入库）：SDAILY_STORE_FILE / SDAILY_STORE_PASSWORD / SDAILY_KEY_ALIAS / SDAILY_KEY_PASSWORD
+val localProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
 }
 
 android {
@@ -17,9 +25,24 @@ android {
         vectorDrawables { useSupportLibrary = true }
     }
 
+    signingConfigs {
+        create("release") {
+            // local.properties 经 Properties.load 按 ISO-8859-1 解码，含中文的绝对路径会乱码；
+            // 路径解析失败时回退到项目根的 keystore/sdaily-release.keystore（密码仍从 local.properties 读取）
+            storeFile = localProps.getProperty("SDAILY_STORE_FILE")
+                ?.let { rootProject.file(it) }
+                ?.takeIf { it.exists() }
+                ?: rootProject.file("keystore/sdaily-release.keystore")
+            storePassword = localProps.getProperty("SDAILY_STORE_PASSWORD")
+            keyAlias = localProps.getProperty("SDAILY_KEY_ALIAS")
+            keyPassword = localProps.getProperty("SDAILY_KEY_PASSWORD")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
