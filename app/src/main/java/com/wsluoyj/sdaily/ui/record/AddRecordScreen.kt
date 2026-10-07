@@ -69,12 +69,22 @@ fun AddRecordScreen(
     val app = context.applicationContext as SdailyApp
     val scope = rememberCoroutineScope()
     val partners by app.partnerRepository.activePartners.collectAsState(initial = emptyList())
+    val allPartners by app.partnerRepository.allPartners.collectAsState(initial = emptyList())
 
     var method by remember { mutableStateOf(editRecord?.method ?: RecordMethod.SEX) }
     var durationFilled by remember { mutableStateOf(editRecord?.durationMin != null) }
     var duration by remember { mutableStateOf(editRecord?.durationMin ?: 10) }
     var rating by remember { mutableStateOf(editRecord?.rating) }
     var partnerId by remember { mutableStateOf(editRecord?.partnerId) }
+    // 编辑已归档伴侣的历史记录时，把该并入选项，保证名字可见、数据可原样保存
+    val pickerPartners = remember(partners, allPartners, partnerId) {
+        val archivedSelected = partnerId?.let { id ->
+            allPartners.find { it.id == id && partners.none { p -> p.id == id } }
+        }
+        if (archivedSelected != null) {
+            partners + archivedSelected.copy(name = "${archivedSelected.name}（已归档）")
+        } else partners
+    }
     var location by remember { mutableStateOf(editRecord?.location ?: "") }
     var internalEjac by remember { mutableStateOf(editRecord?.internalEjac ?: false) }
     var protection by remember { mutableStateOf(editRecord?.protectionUsed ?: false) }
@@ -180,7 +190,7 @@ fun AddRecordScreen(
                 Text("性伴侣", style = MaterialTheme.typography.labelLarge)
                 Spacer(Modifier.height(6.dp))
                 PartnerPicker(
-                    partners = partners,
+                    partners = pickerPartners,
                     selectedId = partnerId,
                     onSelect = { partnerId = it },
                     onAdd = { name ->

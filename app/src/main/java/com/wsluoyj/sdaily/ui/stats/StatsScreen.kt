@@ -198,6 +198,20 @@ fun StatsScreen(modifier: Modifier = Modifier) {
             ChartCard("方式占比") {
                 Spacer(Modifier.height(10.dp))
                 val totalMethods = methodCounts.values.sum().coerceAtLeast(1)
+                // 最大余数法分配整数百分比，保证各项之和恰为 100%
+                val percents = remember(methodCounts) {
+                    val total = methodCounts.values.sum()
+                    if (total == 0) return@remember emptyMap<RecordMethod, Int>()
+                    val exact = methodCounts.mapValues { it.value * 100.0 / total }
+                    val base = exact.mapValues { it.value.toInt() }
+                    val remainder = 100 - base.values.sum()
+                    val order = exact.entries
+                        .sortedByDescending { it.value - base.getValue(it.key) }
+                        .map { it.key }
+                    val result = base.toMutableMap()
+                    order.take(remainder).forEach { result[it] = result.getValue(it) + 1 }
+                    result
+                }
                 val colors = listOf(
                     MaterialTheme.colorScheme.primary,
                     MaterialTheme.colorScheme.secondary,
@@ -236,7 +250,7 @@ fun StatsScreen(modifier: Modifier = Modifier) {
                                 )
                             }
                             Text(
-                                "$c 次 · ${c * 100 / totalMethods}%",
+                                "$c 次 · ${percents[m]}%",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
