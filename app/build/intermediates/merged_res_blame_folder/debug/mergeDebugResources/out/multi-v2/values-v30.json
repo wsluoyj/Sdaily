@@ -1,10 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "com.wsluoyj.sdaily.app-mergeDebugResources-39:/values-v30/values-v30.xml",
+            "outputFile": "com.wsluoyj.sdaily.app-mergeDebugResources-41:/values-v30/values-v30.xml",
             "map": [
                 {
-                    "source": "D:\\学习\\dev\\.gradle\\caches\\9.6.0\\transforms\\78261afd2e42a22f119548ae7e888872\\transformed\\material3\\res\\values-v30\\values-v30.xml",
+                    "source": "D:\\学习\\dev\\.gradle\\caches\\9.6.0\\transforms\\4af69cf69bb8c390a87ca5a1ac2a21bd\\transformed\\material3\\res\\values-v30\\values-v30.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",
