@@ -1,0 +1,7 @@
+com.wsluoyj.sdaily
+color ic_launcher_background
+color launcher_bg
+drawable ic_launcher_foreground
+mipmap ic_launcher
+string app_name
+style Theme_Sdaily

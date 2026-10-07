@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 简洁的"S"字母标记 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M58.4,42.6c-3.2,-1.9 -7.1,-2.9 -10.7,-2.9c-3.1,0 -5.3,1.4 -5.3,3.4c0,2.4 2.8,3.2 6.3,4.2l5.1,1.5c6.7,2 10.7,5.1 10.7,11.1c0,6.9 -6.2,11.6 -15,11.6c-5.4,0 -10.4,-1.4 -14.2,-4l3.1,-6c3.2,2.2 7.2,3.6 11.2,3.6c3.5,0 5.8,-1.4 5.8,-3.7c0,-2.4 -2.5,-3.4 -6.6,-4.6l-5.1,-1.5c-6.3,-1.9 -10.4,-4.9 -10.4,-11c0,-6.4 5.9,-11.1 14.2,-11.1c5,0 9.4,1.2 12.7,3.4z" />
+</vector>
