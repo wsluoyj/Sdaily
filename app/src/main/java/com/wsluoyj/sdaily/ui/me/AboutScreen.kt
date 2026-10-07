@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -120,32 +121,29 @@ fun AboutScreen(onBack: () -> Unit) {
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
             ) {
                 Row(
-                    Modifier.padding(18.dp),
+                    Modifier.padding(horizontal = 16.dp, vertical = 18.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        Modifier.size(40.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("GitHub", color = MaterialTheme.colorScheme.onPrimaryContainer, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    }
-                    Column(Modifier.weight(1f).padding(start = 10.dp)) {
+                    Column(Modifier.weight(1f)) {
                         Text(
                             "应用更新",
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                             fontWeight = FontWeight.SemiBold
                         )
+                        Spacer(Modifier.height(2.dp))
                         Text(
-                            "github.com/wsluoyj/Sdaily/releases",
+                            "前往 GitHub Releases 检查新版本",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
+                    Spacer(Modifier.width(8.dp))
                     Icon(
                         Icons.AutoMirrored.Filled.OpenInNew,
                         contentDescription = "在浏览器打开",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
