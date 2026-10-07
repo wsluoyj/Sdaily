@@ -3,6 +3,7 @@ package com.wsluoyj.sdaily.ui
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.CalendarMonth
@@ -31,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -164,7 +167,7 @@ private fun BottomBar(
             }
         }
 
-        // 中间凸起的圆形记录按钮
+        // 中间凸起的圆形记录按钮：圆心在栏内、上缘略高出栏顶
         Surface(
             onClick = onAddClick,
             shape = CircleShape,
@@ -176,14 +179,14 @@ private fun BottomBar(
             shadowElevation = 10.dp,
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .offset(y = (-18).dp)
-                .size(58.dp)
+                .offset(y = (-12).dp)
+                .size(60.dp)
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     Icons.Rounded.Add,
                     contentDescription = "记录一次",
-                    modifier = Modifier.size(30.dp)
+                    modifier = Modifier.size(32.dp)
                 )
             }
         }
@@ -197,26 +200,30 @@ private fun BarItem(
     modifier: Modifier = Modifier,
     onClick: (Tab) -> Unit
 ) {
-    Column(
-        modifier = modifier
-            .height(barHeight)
-            .padding(top = 8.dp)
-            .clickable { onClick(item) },
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            item.icon,
-            contentDescription = item.label,
-            tint = if (selected) MaterialTheme.colorScheme.primary
-            else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(24.dp)
-        )
-        Text(
-            item.label,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (selected) MaterialTheme.colorScheme.primary
-            else MaterialTheme.colorScheme.onSurfaceVariant
-        )
+    // 胶囊式点击区：波纹轮廓贴合图标+文字，垂直居中于导航栏
+    Box(modifier, contentAlignment = Alignment.Center) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .clip(RoundedCornerShape(20.dp))
+                .clickable { onClick(item) }
+                .padding(horizontal = 14.dp, vertical = 9.dp)
+        ) {
+            Icon(
+                item.icon,
+                contentDescription = item.label,
+                tint = if (selected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(22.dp)
+            )
+            Text(
+                item.label,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                color = if (selected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 5.dp)
+            )
+        }
     }
 }

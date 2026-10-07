@@ -1,9 +1,11 @@
 package com.wsluoyj.sdaily.ui.me
 
+import android.app.Activity
+import android.hardware.biometrics.BiometricManager
+import android.hardware.biometrics.BiometricPrompt
+import android.os.CancellationSignal
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.biometric.BiometricManager
-import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -49,7 +51,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.FragmentActivity
 import com.wsluoyj.sdaily.BuildConfig
 import com.wsluoyj.sdaily.SdailyApp
 import com.wsluoyj.sdaily.data.reminder.ReminderScheduler
@@ -64,45 +65,46 @@ private enum class DialogMode { NONE, EXPORT_PWD, IMPORT_PWD, IMPORT_CONFIRM }
 private val AUTHENTICATORS =
     BiometricManager.Authenticators.BIOMETRIC_WEAK or BiometricManager.Authenticators.DEVICE_CREDENTIAL
 
-/** 首次开启应用锁：当场验证一次，通过后写入开关 */
+/** 首次开启应用锁：当场验证一次，通过后写入开关（Android 11+ 平台 API） */
 private fun enableAppLock(
     context: android.content.Context,
     onSuccess: () -> Unit,
     onError: (String) -> Unit
 ) {
-    val act = context as? FragmentActivity
-    if (act == null) {
+    val activity = context as? Activity
+    if (activity == null) {
         onError("无法启动验证")
         return
     }
-    val can = BiometricManager.from(context).canAuthenticate(AUTHENTICATORS)
-    if (can != BiometricManager.BIOMETRIC_SUCCESS) {
+    val manager = activity.getSystemService(BiometricManager::class.java)
+    if (manager == null ||
+        manager.canAuthenticate(AUTHENTICATORS) != BiometricManager.BIOMETRIC_SUCCESS
+    ) {
         onError("请先在系统设置录入指纹或设置屏幕锁")
         return
     }
-    val prompt = BiometricPrompt(
-        act,
-        ContextCompat.getMainExecutor(context),
-        object : BiometricPrompt.AuthenticationCallback() {
-            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                onSuccess()
-            }
-
-            override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                onError(
-                    if (errorCode == BiometricPrompt.ERROR_USER_CANCELED ||
-                        errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON
-                    ) "已取消，未开启" else "开启失败：$errString"
-                )
-            }
-        }
-    )
-    val info = BiometricPrompt.PromptInfo.Builder()
+    val prompt = BiometricPrompt.Builder(context)
         .setTitle("开启指纹应用锁")
         .setSubtitle("验证一次以启用，打开 App 时将要求验证")
         .setAllowedAuthenticators(AUTHENTICATORS)
         .build()
-    prompt.authenticate(info)
+    prompt.authenticate(
+        CancellationSignal(),
+        ContextCompat.getMainExecutor(context),
+        object : BiometricPrompt.AuthenticationCallback() {
+            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult?) {
+                onSuccess()
+            }
+
+            override fun onAuthenticationError(errorCode: Int, errString: CharSequence?) {
+                onError(
+                    if (errorCode == BiometricPrompt.BIOMETRIC_ERROR_USER_CANCELED ||
+                        errorCode == BiometricPrompt.BIOMETRIC_ERROR_CANCELED
+                    ) "已取消，未开启" else "开启失败：${errString ?: ""}"
+                )
+            }
+        }
+    )
 }
 
 @Composable

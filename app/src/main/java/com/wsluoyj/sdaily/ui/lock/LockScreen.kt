@@ -1,7 +1,9 @@
 package com.wsluoyj.sdaily.ui.lock
 
-import androidx.biometric.BiometricManager
-import androidx.biometric.BiometricPrompt
+import android.app.Activity
+import android.hardware.biometrics.BiometricManager
+import android.hardware.biometrics.BiometricPrompt
+import android.os.CancellationSignal
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -28,12 +30,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.FragmentActivity
 
 private val AUTHENTICATORS =
     BiometricManager.Authenticators.BIOMETRIC_WEAK or BiometricManager.Authenticators.DEVICE_CREDENTIAL
 
-/** 应用锁解锁页：进入时自动拉起系统指纹验证 */
+/** 应用锁解锁页：进入时自动拉起系统指纹验证（Android 11+ 平台 API，任意 Activity 可用） */
 @Composable
 fun LockScreen(onUnlocked: () -> Unit) {
     val context = LocalContext.current
@@ -41,41 +42,42 @@ fun LockScreen(onUnlocked: () -> Unit) {
     var autoTried by remember { mutableStateOf(false) }
 
     fun authenticate() {
-        val act = context as? FragmentActivity
-        if (act == null) {
+        val activity = context as? Activity
+        if (activity == null) {
             hint = "无法启动验证，请重进应用"
             return
         }
-        val can = BiometricManager.from(context).canAuthenticate(AUTHENTICATORS)
-        if (can != BiometricManager.BIOMETRIC_SUCCESS) {
+        val manager = activity.getSystemService(BiometricManager::class.java)
+        if (manager == null ||
+            manager.canAuthenticate(AUTHENTICATORS) != BiometricManager.BIOMETRIC_SUCCESS
+        ) {
             hint = "本机未录入指纹或未设置屏幕锁，请先到系统设置完成后再试"
             return
         }
-        val prompt = BiometricPrompt(
-            act,
-            ContextCompat.getMainExecutor(context),
-            object : BiometricPrompt.AuthenticationCallback() {
-                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                    onUnlocked()
-                }
-
-                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                    hint = if (errorCode == BiometricPrompt.ERROR_USER_CANCELED ||
-                        errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON
-                    ) {
-                        "已取消，点击下方按钮重新验证"
-                    } else {
-                        errString.toString()
-                    }
-                }
-            }
-        )
-        val info = BiometricPrompt.PromptInfo.Builder()
+        val prompt = BiometricPrompt.Builder(context)
             .setTitle("解锁 私迹")
             .setSubtitle("验证通过后才能查看记录")
             .setAllowedAuthenticators(AUTHENTICATORS)
             .build()
-        prompt.authenticate(info)
+        prompt.authenticate(
+            CancellationSignal(),
+            ContextCompat.getMainExecutor(context),
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult?) {
+                    onUnlocked()
+                }
+
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence?) {
+                    hint = if (errorCode == BiometricPrompt.BIOMETRIC_ERROR_USER_CANCELED ||
+                        errorCode == BiometricPrompt.BIOMETRIC_ERROR_CANCELED
+                    ) {
+                        "已取消，点击下方按钮重新验证"
+                    } else {
+                        (errString ?: "验证失败").toString()
+                    }
+                }
+            }
+        )
     }
 
     LaunchedEffect(Unit) {

@@ -1,23 +1,22 @@
 package com.wsluoyj.sdaily
 
 import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.ComposeView
-import androidx.core.view.WindowCompat
-import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.setViewTreeLifecycleOwner
-import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.wsluoyj.sdaily.ui.MainScaffold
 import com.wsluoyj.sdaily.ui.lock.LockScreen
 import com.wsluoyj.sdaily.ui.theme.SdailyTheme
 
 /**
- * 继承 FragmentActivity 是 BiometricPrompt 的硬性要求；
- * Compose 通过 ComposeView 挂载，并手动接管 ViewTree 的 lifecycle/savedstate owner。
+ * 保持 ComponentActivity：activity-compose 的 setContent 与
+ * ActivityResultLauncher（备份导入导出、权限申请）都依赖它。
+ * 指纹锁使用 Android 11+ 平台 BiometricPrompt，无需 FragmentActivity。
  */
-class MainActivity : FragmentActivity() {
+class MainActivity : ComponentActivity() {
 
     private val settings get() = getSharedPreferences("sdaily_settings", MODE_PRIVATE)
 
@@ -26,25 +25,17 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // edge-to-edge（FragmentActivity 没有 enableEdgeToEdge 扩展，手动开启）
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-
+        enableEdgeToEdge()
         locked = settings.getBoolean("app_lock_enabled", false)
-
-        val composeView = ComposeView(this).apply {
-            setViewTreeLifecycleOwner(this@MainActivity)
-            setViewTreeSavedStateRegistryOwner(this@MainActivity)
-            setContent {
-                SdailyTheme {
-                    if (locked) {
-                        LockScreen(onUnlocked = { locked = false })
-                    } else {
-                        MainScaffold()
-                    }
+        setContent {
+            SdailyTheme {
+                if (locked) {
+                    LockScreen(onUnlocked = { locked = false })
+                } else {
+                    MainScaffold()
                 }
             }
         }
-        setContentView(composeView)
     }
 
     override fun onStop() {

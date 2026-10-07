@@ -57,8 +57,5 @@ dependencies {
     ksp("androidx.room:room-compiler:2.8.5")
     implementation("net.zetetic:sqlcipher-android:4.19.1")
 
-    // 指纹应用锁
-    implementation("androidx.biometric:biometric:1.1.0")
-
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
 }
