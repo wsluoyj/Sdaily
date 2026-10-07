@@ -2,6 +2,7 @@ package com.wsluoyj.sdaily.data.local
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.database.sqlite.SQLiteDatabase
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
@@ -20,16 +21,26 @@ import java.security.SecureRandom
  */
 class DatabaseKeyManager(context: Context) {
 
+    private val appContext: Context = context.applicationContext
+
     private val prefs: SharedPreferences =
-        context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     private val keyStore: KeyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
 
-    /** 获取数据库口令；不存在则创建 */
+    /** 获取数据库口令；不存在则创建；主密钥失效时删残库重建（避免启动崩溃循环） */
     @Synchronized
     fun getOrCreatePassphrase(): ByteArray {
         prefs.getString(KEY_ENC_PASSPHRASE, null)?.let { stored ->
-            return decrypt(Base64.decode(stored, Base64.NO_WRAP))
+            try {
+                return decrypt(Base64.decode(stored, Base64.NO_WRAP))
+            } catch (e: Exception) {
+                // Keystore 主密钥失效（换机恢复 / 恢复出厂 / 密钥被系统清除）：
+                // 旧口令已不可解，数据库无法打开，删除残库用新口令重建；
+                // 用户可稍后通过 .mbak 备份恢复数据
+                prefs.edit().remove(KEY_ENC_PASSPHRASE).apply()
+                SQLiteDatabase.deleteDatabase(appContext.getDatabasePath(SdailyDatabase.DB_NAME))
+            }
         }
         val raw = ByteArray(32).also { SecureRandom().nextBytes(it) }
         val encrypted = encrypt(raw)

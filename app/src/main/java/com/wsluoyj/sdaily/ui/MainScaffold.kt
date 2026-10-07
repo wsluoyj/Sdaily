@@ -1,5 +1,6 @@
 package com.wsluoyj.sdaily.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -59,6 +60,15 @@ fun MainScaffold() {
     var tab by remember { mutableStateOf(Tab.HOME) }
     var addMode by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<com.wsluoyj.sdaily.data.local.entity.EjacRecord?>(null) }
+
+    // 记录页按系统返回键 → 收起回首页，而不是退出应用
+    if (addMode) {
+        BackHandler {
+            addMode = false
+            editing = null
+            tab = Tab.HOME
+        }
+    }
     var showAbout by remember { mutableStateOf(false) }
     var showPartners by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
