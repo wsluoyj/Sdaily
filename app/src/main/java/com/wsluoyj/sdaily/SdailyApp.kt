@@ -79,4 +79,5 @@ class SdailyApp : Application() {
             Log.e(tag, "FAIL: 存储自检失败", t)
         }
     }
+
 }
