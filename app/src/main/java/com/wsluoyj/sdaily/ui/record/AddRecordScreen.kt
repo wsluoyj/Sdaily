@@ -240,31 +240,32 @@ fun AddRecordScreen(
 
         Button(
             onClick = {
-                if (saving) return@Button
-                saving = true
-                scope.launch {
-                    app.recordRepository.save(
-                        EjacRecord(
-                            id = editRecord?.id ?: 0L,
-                            timeMs = editRecord?.timeMs ?: System.currentTimeMillis(),
-                            createdAt = editRecord?.createdAt ?: System.currentTimeMillis(),
-                            updatedAt = System.currentTimeMillis(),
-                            method = method,
-                            durationMin = if (durationFilled) duration else null,
-                            rating = rating,
-                            partnerId = if (method == RecordMethod.SEX) partnerId else null,
-                            location = if (method == RecordMethod.SEX && location.isNotBlank()) location.trim() else null,
-                            internalEjac = if (method == RecordMethod.SEX) internalEjac else null,
-                            protectionUsed = if (method == RecordMethod.SEX) protection else null,
-                            usedToy = if (method == RecordMethod.MASTURBATION) usedToy else null,
-                            note = note.trim().ifBlank { null }
+                    if (saving) return@Button
+                    saving = true
+                    scope.launch {
+                        app.recordRepository.save(
+                            EjacRecord(
+                                id = editRecord?.id ?: 0L,
+                                timeMs = editRecord?.timeMs ?: System.currentTimeMillis(),
+                                createdAt = editRecord?.createdAt ?: System.currentTimeMillis(),
+                                updatedAt = System.currentTimeMillis(),
+                                method = method,
+                                durationMin = if (durationFilled) duration else null,
+                                rating = rating,
+                                partnerId = if (method == RecordMethod.SEX) partnerId else null,
+                                location = if (method == RecordMethod.SEX && location.isNotBlank()) location.trim() else null,
+                                internalEjac = if (method == RecordMethod.SEX) internalEjac else null,
+                                protectionUsed = if (method == RecordMethod.SEX) protection else null,
+                                usedToy = if (method == RecordMethod.MASTURBATION) usedToy else null,
+                                note = note.trim().ifBlank { null }
+                            )
                         )
-                    )
-                    saving = false
-                    snackbarHostState.showSnackbar(if (editRecord == null) "已记录" else "已保存修改")
-                    onSaved()
-                }
-            },
+                        saving = false
+                        // 提示与返回并行，不阻塞返回
+                        scope.launch { snackbarHostState.showSnackbar(if (editRecord == null) "已记录" else "已保存修改") }
+                        onSaved()
+                    }
+                },
             enabled = !saving,
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(16.dp)
@@ -288,7 +289,8 @@ fun AddRecordScreen(
                     scope.launch {
                         app.recordRepository.delete(editRecord)
                         saving = false
-                        snackbarHostState.showSnackbar("已删除")
+                        // 提示与返回并行，删除后立即返回列表
+                        scope.launch { snackbarHostState.showSnackbar("已删除") }
                         onSaved()
                     }
                 }) { Text("删除", color = MaterialTheme.colorScheme.error) }

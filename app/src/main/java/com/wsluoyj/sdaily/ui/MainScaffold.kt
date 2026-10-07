@@ -167,7 +167,7 @@ private fun BottomBar(
             }
         }
 
-        // 中间凸起的圆形记录按钮：圆心在栏内、上缘略高出栏顶
+        // 中间圆形记录按钮：完全嵌入导航栏内，垂直居中
         Surface(
             onClick = onAddClick,
             shape = CircleShape,
@@ -176,10 +176,10 @@ private fun BottomBar(
             contentColor = if (current == null) MaterialTheme.colorScheme.onPrimaryContainer
             else MaterialTheme.colorScheme.onPrimary,
             tonalElevation = 6.dp,
-            shadowElevation = 10.dp,
+            shadowElevation = 8.dp,
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .offset(y = (-12).dp)
+                .offset(y = 4.dp)
                 .size(60.dp)
         ) {
             Box(contentAlignment = Alignment.Center) {
