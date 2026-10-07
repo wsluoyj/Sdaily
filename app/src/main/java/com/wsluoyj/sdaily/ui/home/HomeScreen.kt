@@ -38,7 +38,11 @@ import java.time.LocalDate
 import kotlin.math.roundToInt
 
 @Composable
-fun HomeScreen(modifier: Modifier = Modifier, onRecordClick: () -> Unit) {
+fun HomeScreen(
+    modifier: Modifier = Modifier,
+    onRecordClick: () -> Unit,
+    onEditRecord: (EjacRecord) -> Unit = {}
+) {
     val context = LocalContext.current
     val app = context.applicationContext as SdailyApp
     val records by app.recordRepository.allRecords.collectAsState(initial = emptyList())
@@ -153,15 +157,16 @@ fun HomeScreen(modifier: Modifier = Modifier, onRecordClick: () -> Unit) {
                 )
             }
             items(dayRecords, key = { it.id }) { record ->
-                RecordRow(record, partnerName(record.partnerId))
+                RecordRow(record, partnerName(record.partnerId), onClick = { onEditRecord(record) })
             }
         }
     }
 }
 
 @Composable
-private fun RecordRow(record: EjacRecord, partnerName: String?) {
+private fun RecordRow(record: EjacRecord, partnerName: String?, onClick: () -> Unit) {
     Card(
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)

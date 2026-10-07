@@ -52,7 +52,7 @@ import java.time.YearMonth
 private val weekdayHeaders = listOf("一", "二", "三", "四", "五", "六", "日")
 
 @Composable
-fun CalendarScreen(modifier: Modifier = Modifier) {
+fun CalendarScreen(modifier: Modifier = Modifier, onEditRecord: (EjacRecord) -> Unit = {}) {
     val context = LocalContext.current
     val app = context.applicationContext as SdailyApp
     val records by app.recordRepository.allRecords.collectAsState(initial = emptyList())
@@ -170,7 +170,7 @@ fun CalendarScreen(modifier: Modifier = Modifier) {
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(selectedRecords, key = { it.id }) { record ->
-                    DayEventRow(record, partnerName(record.partnerId))
+                    DayEventRow(record, partnerName(record.partnerId), onClick = { onEditRecord(record) })
                 }
             }
         }
@@ -238,8 +238,9 @@ private fun DayCell(
 }
 
 @Composable
-private fun DayEventRow(record: EjacRecord, partnerName: String?) {
+private fun DayEventRow(record: EjacRecord, partnerName: String?, onClick: () -> Unit) {
     Card(
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)

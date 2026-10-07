@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Remove
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -33,6 +34,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -59,6 +61,7 @@ import java.time.LocalDate
 @Composable
 fun AddRecordScreen(
     modifier: Modifier = Modifier,
+    editRecord: EjacRecord? = null,
     onSaved: () -> Unit,
     snackbarHostState: SnackbarHostState
 ) {
@@ -67,17 +70,18 @@ fun AddRecordScreen(
     val scope = rememberCoroutineScope()
     val partners by app.partnerRepository.activePartners.collectAsState(initial = emptyList())
 
-    var method by remember { mutableStateOf(RecordMethod.SEX) }
-    var durationFilled by remember { mutableStateOf(false) }
-    var duration by remember { mutableStateOf(10) }
-    var rating by remember { mutableStateOf<Int?>(null) }
-    var partnerId by remember { mutableStateOf<Long?>(null) }
-    var location by remember { mutableStateOf("") }
-    var internalEjac by remember { mutableStateOf(false) }
-    var protection by remember { mutableStateOf(false) }
-    var usedToy by remember { mutableStateOf(false) }
-    var note by remember { mutableStateOf("") }
+    var method by remember { mutableStateOf(editRecord?.method ?: RecordMethod.SEX) }
+    var durationFilled by remember { mutableStateOf(editRecord?.durationMin != null) }
+    var duration by remember { mutableStateOf(editRecord?.durationMin ?: 10) }
+    var rating by remember { mutableStateOf(editRecord?.rating) }
+    var partnerId by remember { mutableStateOf(editRecord?.partnerId) }
+    var location by remember { mutableStateOf(editRecord?.location ?: "") }
+    var internalEjac by remember { mutableStateOf(editRecord?.internalEjac ?: false) }
+    var protection by remember { mutableStateOf(editRecord?.protectionUsed ?: false) }
+    var usedToy by remember { mutableStateOf(editRecord?.usedToy ?: false) }
+    var note by remember { mutableStateOf(editRecord?.note ?: "") }
     var saving by remember { mutableStateOf(false) }
+    var confirmDelete by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -86,10 +90,14 @@ fun AddRecordScreen(
             .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 28.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("记录一次", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        val now = System.currentTimeMillis()
         Text(
-            formatDayLabel(now.toLocalDate()) + "  " + formatTime(now),
+            if (editRecord == null) "记录一次" else "编辑记录",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold
+        )
+        val shown = editRecord?.timeMs ?: System.currentTimeMillis()
+        Text(
+            formatDayLabel(shown.toLocalDate()) + "  " + formatTime(shown),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -221,6 +229,15 @@ fun AddRecordScreen(
             )
         }
 
+        if (editRecord != null) {
+            TextButton(
+                onClick = { confirmDelete = true },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("删除这条记录", color = MaterialTheme.colorScheme.error)
+            }
+        }
+
         Button(
             onClick = {
                 if (saving) return@Button
@@ -228,7 +245,10 @@ fun AddRecordScreen(
                 scope.launch {
                     app.recordRepository.save(
                         EjacRecord(
-                            timeMs = System.currentTimeMillis(),
+                            id = editRecord?.id ?: 0L,
+                            timeMs = editRecord?.timeMs ?: System.currentTimeMillis(),
+                            createdAt = editRecord?.createdAt ?: System.currentTimeMillis(),
+                            updatedAt = System.currentTimeMillis(),
                             method = method,
                             durationMin = if (durationFilled) duration else null,
                             rating = rating,
@@ -240,18 +260,8 @@ fun AddRecordScreen(
                             note = note.trim().ifBlank { null }
                         )
                     )
-                    // 重置表单
-                    method = RecordMethod.SEX
-                    durationFilled = false
-                    rating = null
-                    partnerId = null
-                    location = ""
-                    internalEjac = false
-                    protection = false
-                    usedToy = false
-                    note = ""
                     saving = false
-                    snackbarHostState.showSnackbar("已记录")
+                    snackbarHostState.showSnackbar(if (editRecord == null) "已记录" else "已保存修改")
                     onSaved()
                 }
             },
@@ -259,8 +269,34 @@ fun AddRecordScreen(
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(16.dp)
         ) {
-            Text("保存记录", style = MaterialTheme.typography.titleMedium)
+            Text(
+                if (editRecord == null) "保存记录" else "保存修改",
+                style = MaterialTheme.typography.titleMedium
+            )
         }
+    }
+
+    if (confirmDelete && editRecord != null) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text("删除这条记录？") },
+            text = { Text("删除后无法恢复") },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmDelete = false
+                    saving = true
+                    scope.launch {
+                        app.recordRepository.delete(editRecord)
+                        saving = false
+                        snackbarHostState.showSnackbar("已删除")
+                        onSaved()
+                    }
+                }) { Text("删除", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDelete = false }) { Text("取消") }
+            }
+        )
     }
 }
 

@@ -55,6 +55,7 @@ private val barHeight = 68.dp
 fun MainScaffold() {
     var tab by remember { mutableStateOf(Tab.HOME) }
     var addMode by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf<com.wsluoyj.sdaily.data.local.entity.EjacRecord?>(null) }
     var showAbout by remember { mutableStateOf(false) }
     var showPartners by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -81,6 +82,7 @@ fun MainScaffold() {
                 onAddClick = {
                     // 首次点打开记录，记录态再点则收起回首页
                     addMode = !addMode
+                    if (addMode) editing = null
                     if (!addMode) tab = Tab.HOME
                 }
             )
@@ -89,18 +91,30 @@ fun MainScaffold() {
         when {
             addMode -> AddRecordScreen(
                 modifier = Modifier.padding(innerPadding),
+                editRecord = editing,
                 onSaved = {
                     addMode = false
+                    editing = null
                     tab = Tab.HOME
                 },
                 snackbarHostState = snackbarHostState
             )
             tab == Tab.HOME -> HomeScreen(
                 modifier = Modifier.padding(innerPadding),
-                onRecordClick = { addMode = true }
+                onRecordClick = { addMode = true },
+                onEditRecord = { record ->
+                    editing = record
+                    addMode = true
+                }
             )
             tab == Tab.STATS -> StatsScreen(Modifier.padding(innerPadding))
-            tab == Tab.CALENDAR -> CalendarScreen(Modifier.padding(innerPadding))
+            tab == Tab.CALENDAR -> CalendarScreen(
+                Modifier.padding(innerPadding),
+                onEditRecord = { record ->
+                    editing = record
+                    addMode = true
+                }
+            )
             tab == Tab.ME -> MeScreen(
                 modifier = Modifier.padding(innerPadding),
                 onAboutClick = { showAbout = true },

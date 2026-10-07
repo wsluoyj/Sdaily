@@ -25,6 +25,7 @@ import androidx.compose.material.icons.outlined.PeopleOutline
 import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material.icons.outlined.UploadFile
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -34,6 +35,8 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,6 +52,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import com.wsluoyj.sdaily.BuildConfig
 import com.wsluoyj.sdaily.SdailyApp
+import com.wsluoyj.sdaily.data.reminder.ReminderScheduler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -115,6 +119,15 @@ fun MeScreen(
     var appLock by remember {
         mutableStateOf(app.settings.getBoolean("app_lock_enabled", false))
     }
+    var showReminder by remember { mutableStateOf(false) }
+    var reminderEnabled by remember { mutableStateOf(ReminderScheduler.isEnabled(context)) }
+    var reminderHour by remember { mutableStateOf(ReminderScheduler.hour(context)) }
+    var reminderMinute by remember { mutableStateOf(ReminderScheduler.minute(context)) }
+
+    // Android 13+ 通知运行时权限（Android 11 真机无需，兼容未来高版本设备）
+    val notifPermLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { }
     var dialog by remember { mutableStateOf(DialogMode.NONE) }
     var busy by remember { mutableStateOf(false) }
     var pendingPassword by remember { mutableStateOf<CharArray?>(null) }
@@ -270,6 +283,35 @@ fun MeScreen(
         DialogMode.NONE -> Unit
     }
 
+    if (showReminder) {
+        ReminderDialog(
+            initialEnabled = reminderEnabled,
+            initialHour = reminderHour,
+            initialMinute = reminderMinute,
+            onDismiss = { showReminder = false },
+            onSave = { enabled, h, m ->
+                showReminder = false
+                if (enabled) {
+                    if (android.os.Build.VERSION.SDK_INT >= 33) {
+                        notifPermLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                    ReminderScheduler.enable(context, h, m)
+                } else {
+                    ReminderScheduler.disable(context)
+                }
+                reminderEnabled = enabled
+                reminderHour = h
+                reminderMinute = m
+                scope.launch {
+                    toast(
+                        if (enabled) "提醒已设置：每天 %02d:%02d".format(h, m)
+                        else "已关闭提醒"
+                    )
+                }
+            }
+        )
+    }
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
@@ -317,8 +359,12 @@ fun MeScreen(
                 ActionItem(Icons.Outlined.PeopleOutline, "伴侣档案管理", "新增、重命名、归档性伴侣") {
                     onPartnerManageClick()
                 }
-                ActionItem(Icons.Outlined.Notifications, "记录提醒", "定时提醒记录") {
-                    scope.launch { toast("「记录提醒」将在后续版本上线") }
+                ActionItem(
+                    Icons.Outlined.Notifications,
+                    "记录提醒",
+                    if (reminderEnabled) "每天 %02d:%02d".format(reminderHour, reminderMinute) else "未开启"
+                ) {
+                    showReminder = true
                 }
             }
         }
@@ -388,6 +434,47 @@ private fun ActionItem(icon: ImageVector, title: String, subtitle: String?, onCl
             tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ReminderDialog(
+    initialEnabled: Boolean,
+    initialHour: Int,
+    initialMinute: Int,
+    onDismiss: () -> Unit,
+    onSave: (Boolean, Int, Int) -> Unit
+) {
+    var enabled by remember { mutableStateOf(initialEnabled) }
+    val timeState = rememberTimePickerState(
+        initialHour = initialHour,
+        initialMinute = initialMinute,
+        is24Hour = true
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("记录提醒") },
+        text = {
+            Column {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("每天定时提醒我记录", style = MaterialTheme.typography.bodyLarge)
+                    Switch(checked = enabled, onCheckedChange = { enabled = it })
+                }
+                if (enabled) {
+                    Spacer(Modifier.height(12.dp))
+                    TimePicker(state = timeState)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(enabled, timeState.hour, timeState.minute) }) { Text("保存") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } }
+    )
 }
 
 @Composable
