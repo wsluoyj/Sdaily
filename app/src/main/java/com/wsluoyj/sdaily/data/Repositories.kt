@@ -31,6 +31,7 @@ class RecordRepository(private val dao: RecordDao) {
 class PartnerRepository(private val dao: PartnerDao) {
 
     val activePartners: Flow<List<Partner>> = dao.observeActive()
+    val allPartners: Flow<List<Partner>> = dao.observeAll()
 
     suspend fun save(partner: Partner): Long =
         if (partner.id == 0L) dao.insert(partner) else { dao.update(partner); partner.id }

@@ -3,11 +3,13 @@ package com.wsluoyj.sdaily.ui
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BarChart
@@ -36,6 +38,7 @@ import com.wsluoyj.sdaily.ui.calendar.CalendarScreen
 import com.wsluoyj.sdaily.ui.home.HomeScreen
 import com.wsluoyj.sdaily.ui.me.AboutScreen
 import com.wsluoyj.sdaily.ui.me.MeScreen
+import com.wsluoyj.sdaily.ui.me.PartnerManageScreen
 import com.wsluoyj.sdaily.ui.record.AddRecordScreen
 import com.wsluoyj.sdaily.ui.stats.StatsScreen
 
@@ -53,7 +56,13 @@ fun MainScaffold() {
     var tab by remember { mutableStateOf(Tab.HOME) }
     var addMode by remember { mutableStateOf(false) }
     var showAbout by remember { mutableStateOf(false) }
+    var showPartners by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
+
+    if (showPartners) {
+        PartnerManageScreen(onBack = { showPartners = false })
+        return
+    }
 
     if (showAbout) {
         AboutScreen(onBack = { showAbout = false })
@@ -79,7 +88,7 @@ fun MainScaffold() {
     ) { innerPadding ->
         when {
             addMode -> AddRecordScreen(
-                modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding()),
+                modifier = Modifier.padding(innerPadding),
                 onSaved = {
                     addMode = false
                     tab = Tab.HOME
@@ -87,18 +96,15 @@ fun MainScaffold() {
                 snackbarHostState = snackbarHostState
             )
             tab == Tab.HOME -> HomeScreen(
-                modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding()),
+                modifier = Modifier.padding(innerPadding),
                 onRecordClick = { addMode = true }
             )
-            tab == Tab.STATS -> StatsScreen(
-                Modifier.padding(bottom = innerPadding.calculateBottomPadding())
-            )
-            tab == Tab.CALENDAR -> CalendarScreen(
-                Modifier.padding(bottom = innerPadding.calculateBottomPadding())
-            )
+            tab == Tab.STATS -> StatsScreen(Modifier.padding(innerPadding))
+            tab == Tab.CALENDAR -> CalendarScreen(Modifier.padding(innerPadding))
             tab == Tab.ME -> MeScreen(
-                modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding()),
+                modifier = Modifier.padding(innerPadding),
                 onAboutClick = { showAbout = true },
+                onPartnerManageClick = { showPartners = true },
                 snackbarHostState = snackbarHostState
             )
         }
@@ -126,17 +132,21 @@ private fun BottomBar(
             tonalElevation = 3.dp,
             shadowElevation = 8.dp
         ) {
-            androidx.compose.foundation.layout.Row(
-                Modifier
-                    .fillMaxWidth()
-                    .height(barHeight)
-                    .padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                left.forEach { BarItem(it, it == current, Modifier.weight(1f), onTabSelected) }
-                // 中间留给凸起按钮
-                Box(Modifier.weight(1f))
-                right.forEach { BarItem(it, it == current, Modifier.weight(1f), onTabSelected) }
+            Column {
+                androidx.compose.foundation.layout.Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(barHeight)
+                        .padding(horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    left.forEach { BarItem(it, it == current, Modifier.weight(1f), onTabSelected) }
+                    // 中间留给凸起按钮
+                    Box(Modifier.weight(1f))
+                    right.forEach { BarItem(it, it == current, Modifier.weight(1f), onTabSelected) }
+                }
+                // 让底栏背景延伸到导航栏后面，内容避开系统导航栏
+                Spacer(Modifier.navigationBarsPadding())
             }
         }
 

@@ -8,7 +8,7 @@ import androidx.room.PrimaryKey
 enum class RecordMethod(val label: String) {
     SEX("性生活"),
     MASTURBATION("自慰"),
-    TOY("器具"),
+    DREAM("春梦"),
     OTHER("其他")
 }
 
@@ -39,6 +39,8 @@ data class EjacRecord(
     val internalEjac: Boolean? = null,
     /** 是否采取防护措施（安全套等），未知为 null */
     val protectionUsed: Boolean? = null,
+    /** 自慰时是否使用器具；仅自慰有意义，未知为 null */
+    val usedToy: Boolean? = null,
     /** 备注 */
     val note: String? = null,
     val createdAt: Long = System.currentTimeMillis(),

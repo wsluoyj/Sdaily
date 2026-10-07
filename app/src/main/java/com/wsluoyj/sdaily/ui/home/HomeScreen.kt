@@ -173,6 +173,9 @@ private fun RecordRow(record: EjacRecord, partnerName: String?) {
             Column(Modifier.weight(1f)) {
                 val title = buildString {
                     append(record.method.label)
+                    if (record.method == RecordMethod.MASTURBATION && record.usedToy == true) {
+                        append(" · 器具")
+                    }
                     partnerName?.let { append(" · ").append(it) }
                 }
                 Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)

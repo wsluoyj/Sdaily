@@ -75,6 +75,7 @@ fun AddRecordScreen(
     var location by remember { mutableStateOf("") }
     var internalEjac by remember { mutableStateOf(false) }
     var protection by remember { mutableStateOf(false) }
+    var usedToy by remember { mutableStateOf(false) }
     var note by remember { mutableStateOf("") }
     var saving by remember { mutableStateOf(false) }
 
@@ -158,6 +159,13 @@ fun AddRecordScreen(
             }
         }
 
+        // 自慰专属：是否使用器具
+        if (method == RecordMethod.MASTURBATION) {
+            SectionCard("自慰选项") {
+                SwitchRow("使用器具", usedToy) { usedToy = it }
+            }
+        }
+
         // 性生活专属
         if (method == RecordMethod.SEX) {
             SectionCard("性生活详情（选填）") {
@@ -228,6 +236,7 @@ fun AddRecordScreen(
                             location = if (method == RecordMethod.SEX && location.isNotBlank()) location.trim() else null,
                             internalEjac = if (method == RecordMethod.SEX) internalEjac else null,
                             protectionUsed = if (method == RecordMethod.SEX) protection else null,
+                            usedToy = if (method == RecordMethod.MASTURBATION) usedToy else null,
                             note = note.trim().ifBlank { null }
                         )
                     )
@@ -239,6 +248,7 @@ fun AddRecordScreen(
                     location = ""
                     internalEjac = false
                     protection = false
+                    usedToy = false
                     note = ""
                     saving = false
                     snackbarHostState.showSnackbar("已记录")

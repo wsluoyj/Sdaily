@@ -43,6 +43,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.wsluoyj.sdaily.SdailyApp
 import com.wsluoyj.sdaily.data.local.entity.EjacRecord
+import com.wsluoyj.sdaily.data.local.entity.RecordMethod
 import com.wsluoyj.sdaily.util.formatTime
 import com.wsluoyj.sdaily.util.toLocalDate
 import java.time.LocalDate
@@ -250,6 +251,9 @@ private fun DayEventRow(record: EjacRecord, partnerName: String?) {
                 Text(
                     buildString {
                         append(record.method.label)
+                        if (record.method == RecordMethod.MASTURBATION && record.usedToy == true) {
+                            append(" · 器具")
+                        }
                         partnerName?.let { append(" · ").append(it) }
                     },
                     style = MaterialTheme.typography.bodyLarge
@@ -259,6 +263,7 @@ private fun DayEventRow(record: EjacRecord, partnerName: String?) {
                     record.rating?.let { add("★".repeat(it)) }
                     record.internalEjac?.let { if (it) add("内射") }
                     record.protectionUsed?.let { if (it) add("已防护") }
+                    record.note?.takeIf { it.isNotBlank() }?.let { add(it) }
                 }.joinToString(" · ")
                 if (sub.isNotEmpty()) {
                     Text(

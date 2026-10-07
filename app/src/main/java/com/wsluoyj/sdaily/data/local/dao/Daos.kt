@@ -66,6 +66,9 @@ interface PartnerDao {
     fun observeActive(): Flow<List<Partner>>
 
     @Query("SELECT * FROM partners ORDER BY archived ASC, createdAt DESC")
+    fun observeAll(): Flow<List<Partner>>
+
+    @Query("SELECT * FROM partners ORDER BY archived ASC, createdAt DESC")
     suspend fun listAll(): List<Partner>
 
     @Insert

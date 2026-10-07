@@ -29,6 +29,7 @@ object AppDatabaseProvider {
             SdailyDatabase.DB_NAME
         )
             .openHelperFactory(factory)
+            .addMigrations(MIGRATION_1_2)
             .build()
     }
 }
